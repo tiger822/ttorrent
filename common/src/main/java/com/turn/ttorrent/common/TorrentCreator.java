@@ -231,7 +231,12 @@ public class TorrentCreator {
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     BEncoder.bencode(new BEValue(torrent), baos);
-    return new TorrentParser().parse(baos.toByteArray());
+    return new TorrentParser() {
+      @Override
+      public Set<String> getExtAnnounceURLs() {
+        return null;
+      }
+    }.parse(baos.toByteArray());
   }
 
   /**

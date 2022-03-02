@@ -31,6 +31,9 @@ public class TorrentsRepository {
   public TrackedTorrent getTorrent(String hexInfoHash) {
     return myTorrents.get(hexInfoHash);
   }
+  public void remove(String hexInfoHash){
+     myTorrents.remove(hexInfoHash);
+  }
 
   public void putIfAbsent(String hexInfoHash, TrackedTorrent torrent) {
     myTorrents.putIfAbsent(hexInfoHash, torrent);

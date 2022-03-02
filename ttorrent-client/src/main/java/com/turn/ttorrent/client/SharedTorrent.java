@@ -34,6 +34,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 
 
 /**
@@ -51,7 +52,7 @@ import java.util.concurrent.Future;
  *
  * @author mpetazzoni
  */
-public class SharedTorrent implements PeerActivityListener, TorrentMetadata, TorrentInfo {
+public  class SharedTorrent implements PeerActivityListener, TorrentMetadata, TorrentInfo {
 
   private static final Logger logger =
           TorrentLoggerFactory.getLogger(SharedTorrent.class);
@@ -136,11 +137,18 @@ public class SharedTorrent implements PeerActivityListener, TorrentMetadata, Tor
     this.requestedPieces = new BitSet();
   }
 
-  public static SharedTorrent fromFile(File source, PieceStorage pieceStorage, TorrentStatistic torrentStatistic)
+  public static SharedTorrent fromFile(File source, PieceStorage pieceStorage, TorrentStatistic torrentStatistic,AnnounceListener... announceListener)
           throws IOException {
     byte[] data = FileUtils.readFileToByteArray(source);
-    TorrentMetadata torrentMetadata = new TorrentParser().parse(data);
-    return new SharedTorrent(torrentMetadata, pieceStorage, DEFAULT_REQUEST_STRATEGY, torrentStatistic, new EventDispatcher());
+    AtomicReference<SharedTorrent> ins=new AtomicReference<>();
+    TorrentMetadata torrentMetadata = new TorrentParser() {
+      @Override
+      public Set<String> getExtAnnounceURLs() {
+        return announceListener.length==0?null:announceListener[0].getExtAnnounceURLs();
+      }
+    }.parse(data);
+    ins.set( new SharedTorrent(torrentMetadata, pieceStorage, DEFAULT_REQUEST_STRATEGY, torrentStatistic, new EventDispatcher()));
+    return ins.get();
   }
 
   private synchronized void closeFileChannelIfNecessary() throws IOException {

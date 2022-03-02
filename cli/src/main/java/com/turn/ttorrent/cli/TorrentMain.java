@@ -35,10 +35,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Vector;
+import java.util.*;
 
 /**
  * Command-line entry-point for reading and writing {@link TorrentMetadata}.
@@ -86,8 +83,8 @@ public class TorrentMain {
    * </p>
    */
   public static void main(String[] args) {
-    BasicConfigurator.configure(new ConsoleAppender(
-            new PatternLayout("%-5p: %m%n")));
+    /*BasicConfigurator.configure(new ConsoleAppender(
+            new PatternLayout("%-5p: %m%n")));*/
 
     CmdLineParser parser = new CmdLineParser();
     CmdLineParser.Option help = parser.addBooleanOption('h', "help");
@@ -176,7 +173,12 @@ public class TorrentMain {
 
         fos.write(new TorrentSerializer().serialize(torrent));
       } else {
-        new TorrentParser().parseFromFile(new File(filenameValue));
+        new TorrentParser() {
+          @Override
+          public Set<String> getExtAnnounceURLs() {
+            return null;
+          }
+        }.parseFromFile(new File(filenameValue));
       }
     } catch (Exception e) {
       logger.error("{}", e.getMessage(), e);

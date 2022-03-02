@@ -285,7 +285,12 @@ public class MetadataBuilder {
    * @throws IllegalStateException if builder's state is incorrect (e.g. missing required fields)
    */
   public TorrentMetadata build() throws IOException {
-    return new TorrentParser().parse(buildBinary());
+    return new TorrentParser() {
+      @Override
+      public Set<String> getExtAnnounceURLs() {
+        return null;
+      }
+    }.parse(buildBinary());
   }
 
   /**

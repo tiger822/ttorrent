@@ -18,7 +18,12 @@ public class TorrentParserTest {
 
   @BeforeMethod
   public void setUp() {
-    myTorrentParser = new TorrentParser();
+    myTorrentParser = new TorrentParser() {
+      @Override
+      public Set<String> getExtAnnounceURLs() {
+        return null;
+      }
+    };
   }
 
   public void testParseNullAnnounce() throws IOException {
@@ -32,7 +37,12 @@ public class TorrentParserTest {
 
     metadataMap.put(TorrentMetadataKeys.INFO_TABLE, new BEValue(infoTable));
 
-    TorrentMetadata metadata = new TorrentParser().parse(BEncoder.bencode(metadataMap).array());
+    TorrentMetadata metadata = new TorrentParser() {
+      @Override
+      public Set<String> getExtAnnounceURLs() {
+        return null;
+      }
+    }.parse(BEncoder.bencode(metadataMap).array());
 
     assertNull(metadata.getAnnounce());
   }

@@ -70,7 +70,7 @@ import static com.turn.ttorrent.common.protocol.AnnounceRequestMessage.RequestEv
  *
  * @author mpetazzoni
  */
-public class CommunicationManager implements AnnounceResponseListener, PeerActivityListener, Context, ConnectionManagerContext {
+public  abstract class CommunicationManager implements AnnounceListener,AnnounceResponseListener, PeerActivityListener, Context, ConnectionManagerContext {
 
   protected static final Logger logger = TorrentLoggerFactory.getLogger(CommunicationManager.class);
 
@@ -116,6 +116,9 @@ public class CommunicationManager implements AnnounceResponseListener, PeerActiv
     this.myOutConnectionAllower = new CountLimitConnectionAllower(peersStorage);
     this.myExecutorService = workingExecutor;
     myPieceValidatorExecutor = pieceValidatorExecutor;
+  }
+  public Announce getAnnounce(){
+    return announce;
   }
 
   /**
@@ -173,7 +176,12 @@ public class CommunicationManager implements AnnounceResponseListener, PeerActiv
                                    String downloadDirPath,
                                    PieceStorageFactory pieceStorageFactory,
                                    List<TorrentListener> listeners) throws IOException {
-    FileMetadataProvider metadataProvider = new FileMetadataProvider(dotTorrentFilePath);
+    FileMetadataProvider metadataProvider = new FileMetadataProvider(dotTorrentFilePath) {
+      @Override
+      public Set<String> getExtAnnounceURLs() {
+        return CommunicationManager.this.getExtAnnounceURLs();
+      }
+    };
     TorrentMetadata metadata = metadataProvider.getTorrentMetadata();
     FileCollectionStorage fileCollectionStorage = FileCollectionStorage.create(metadata, new File(downloadDirPath));
     PieceStorage pieceStorage = pieceStorageFactory.createStorage(metadata, fileCollectionStorage);
@@ -225,9 +233,12 @@ public class CommunicationManager implements AnnounceResponseListener, PeerActiv
     eventDispatcher.multicaster().validationComplete(pieceStorage.getAvailablePieces().cardinality(), torrentMetadata.getPiecesCount());
 
     this.torrentsStorage.addTorrent(loadedTorrent.getTorrentHash().getHexInfoHash(), loadedTorrent);
-    forceAnnounceAndLogError(loadedTorrent, pieceStorage.isFinished() ? COMPLETED : STARTED);
+    forceAnnounceAndLogError(loadedTorrent, pieceStorage.isFinished() ? COMPLETED : STARTED,getExtAnnounceURLs());
     logger.debug(String.format("Added torrent %s (%s)", loadedTorrent, loadedTorrent.getTorrentHash().getHexInfoHash()));
     return new TorrentManagerImpl(eventDispatcher, loadedTorrent.getTorrentHash());
+  }
+  public LoadedTorrent getLoadedTorrent(String torrentHexInfoHash){
+    return this.torrentsStorage.getLoadedTorrent(torrentHexInfoHash);
   }
 
   private long calculateLeft(PieceStorage pieceStorage, TorrentMetadata torrentMetadata) {
@@ -249,9 +260,9 @@ public class CommunicationManager implements AnnounceResponseListener, PeerActiv
     return result;
   }
 
-  private void forceAnnounceAndLogError(LoadedTorrent torrent, AnnounceRequestMessage.RequestEvent event) {
+  private void forceAnnounceAndLogError(LoadedTorrent torrent, AnnounceRequestMessage.RequestEvent event,Set<String>...extAnnounceURLs) {
     try {
-      this.announce.forceAnnounce(torrent.createAnnounceableInformation(), this, event);
+      this.announce.forceAnnounce(torrent, this, event);
     } catch (IOException e) {
       logger.warn("unable to force announce torrent {}", torrent);
       logger.debug("", e);
@@ -444,7 +455,7 @@ public class CommunicationManager implements AnnounceResponseListener, PeerActiv
                     self.getPort()
             });
 
-    announce.start(defaultTrackerURI, this, getSelfPeers(bindAddresses), announceIntervalSec);
+    announce.start(defaultTrackerURI, this, getSelfPeers(bindAddresses), announceIntervalSec,getExtAnnounceURLs());
     this.stop.set(false);
 
     myStarted = true;

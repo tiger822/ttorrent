@@ -103,6 +103,9 @@ public class Tracker {
     myTrackerServiceContainer = new TrackerServiceContainer(requestProcessor, new MultiAnnounceRequestProcessor(requestProcessor));
     myPeerCollectorThread = new PeerCollectorThread(myTorrentsRepository);
   }
+  public void removeTorrent(String hexInfoHash){
+    myTorrentsRepository.remove(hexInfoHash);
+  }
 
   /**
    * Returns the full announce URL served by this tracker.

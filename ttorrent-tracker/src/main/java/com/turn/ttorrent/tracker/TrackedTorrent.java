@@ -24,10 +24,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -269,7 +266,12 @@ public class TrackedTorrent implements TorrentHash {
    */
   public static TrackedTorrent load(File torrent) throws IOException {
 
-    TorrentMetadata torrentMetadata = new TorrentParser().parseFromFile(torrent);
+    TorrentMetadata torrentMetadata = new TorrentParser() {
+      @Override
+      public Set<String> getExtAnnounceURLs() {
+        return null;
+      }
+    }.parseFromFile(torrent);
     return new TrackedTorrent(torrentMetadata.getInfoHash());
   }
 

@@ -87,6 +87,11 @@ public class CommunicationManagerTest {
     CommunicationManager seeder = new CommunicationManager(workerES, validatorES) {
 
       @Override
+      public Set<String> getExtAnnounceURLs() {
+        return null;
+      }
+
+      @Override
       public SharingPeer createSharingPeer(String host, int port, ByteBuffer peerId, SharedTorrent torrent, ByteChannel channel, String clientIdentifier, int clientVersion) {
         return new SharingPeer(host, port, peerId, torrent, getConnectionManager(), this, channel, "TO", 1234) {
           @Override
@@ -254,6 +259,11 @@ public class CommunicationManagerTest {
     final ExecutorService validatorES = Executors.newFixedThreadPool(4);
     CommunicationManager hungSeeder = new CommunicationManager(es, validatorES) {
       @Override
+      public Set<String> getExtAnnounceURLs() {
+        return null;
+      }
+
+      @Override
       public void stop() {
         super.stop();
         es.shutdownNow();
@@ -376,6 +386,11 @@ public class CommunicationManagerTest {
       final ExecutorService validatorES = Executors.newFixedThreadPool(4);
       final CommunicationManager seeder = new CommunicationManager(es, validatorES) {
         @Override
+        public Set<String> getExtAnnounceURLs() {
+          return null;
+        }
+
+        @Override
         public void stop() {
           super.stop();
           es.shutdownNow();
@@ -473,6 +488,11 @@ public class CommunicationManagerTest {
     final ExecutorService validatorES = Executors.newFixedThreadPool(4);
     final AtomicInteger countOfTrackerResponses = new AtomicInteger(0);
     CommunicationManager leecher = new CommunicationManager(executorService, validatorES) {
+      @Override
+      public Set<String> getExtAnnounceURLs() {
+        return null;
+      }
+
       @Override
       public void handleDiscoveredPeers(List<Peer> peers, String hexInfoHash) {
         super.handleDiscoveredPeers(peers, hexInfoHash);
@@ -825,6 +845,11 @@ public class CommunicationManagerTest {
     final ExecutorService validatorES = Executors.newFixedThreadPool(4);
     CommunicationManager leecher = new CommunicationManager(executorService, validatorES) {
       @Override
+      public Set<String> getExtAnnounceURLs() {
+        return null;
+      }
+
+      @Override
       public void stop() {
         super.stop();
         executorService.shutdownNow();
@@ -926,6 +951,11 @@ public class CommunicationManagerTest {
     final ExecutorService validatorES = Executors.newFixedThreadPool(4);
     final CommunicationManager leech = new CommunicationManager(es, validatorES) {
       @Override
+      public Set<String> getExtAnnounceURLs() {
+        return null;
+      }
+
+      @Override
       public void handlePieceCompleted(SharingPeer peer, Piece piece) throws IOException {
         super.handlePieceCompleted(peer, piece);
         if (piece.getIndex() % 4 == 0 && interrupts.incrementAndGet() <= 2) {
@@ -977,6 +1007,11 @@ public class CommunicationManagerTest {
     final ExecutorService es = Executors.newFixedThreadPool(DEFAULT_POOL_SIZE);
     final ExecutorService validatorES = Executors.newFixedThreadPool(4);
     final CommunicationManager leecher = new CommunicationManager(es, validatorES) {
+      @Override
+      public Set<String> getExtAnnounceURLs() {
+        return null;
+      }
+
       @Override
       public void stop(int timeout, TimeUnit timeUnit) {
         super.stop(timeout, timeUnit);
@@ -1035,6 +1070,11 @@ public class CommunicationManagerTest {
     final ExecutorService validatorES = Executors.newFixedThreadPool(4);
     CommunicationManager leecher = new CommunicationManager(es, validatorES) {
       @Override
+      public Set<String> getExtAnnounceURLs() {
+        return null;
+      }
+
+      @Override
       public void handlePieceCompleted(SharingPeer peer, Piece piece) {
         piecesDownloaded.incrementAndGet();
         try {
@@ -1064,7 +1104,12 @@ public class CommunicationManagerTest {
   public void canStartAndStopClientTwice() throws Exception {
     final ExecutorService es = Executors.newFixedThreadPool(DEFAULT_POOL_SIZE);
     final ExecutorService validatorES = Executors.newFixedThreadPool(4);
-    final CommunicationManager communicationManager = new CommunicationManager(es, validatorES);
+    final CommunicationManager communicationManager = new CommunicationManager(es, validatorES) {
+      @Override
+      public Set<String> getExtAnnounceURLs() {
+        return null;
+      }
+    };
     communicationManagerList.add(communicationManager);
     try {
       communicationManager.start(InetAddress.getLocalHost());

@@ -16,6 +16,8 @@
 package com.turn.ttorrent.client.announce;
 
 import com.turn.ttorrent.client.Context;
+import com.turn.ttorrent.client.LoadedTorrent;
+import com.turn.ttorrent.client.LoadedTorrentImpl;
 import com.turn.ttorrent.common.AnnounceableInformation;
 import com.turn.ttorrent.common.LoggerUtils;
 import com.turn.ttorrent.common.Peer;
@@ -87,26 +89,57 @@ public class Announce implements Runnable {
     myPeers = new CopyOnWriteArrayList<Peer>();
   }
 
-  public void forceAnnounce(AnnounceableInformation torrent, AnnounceResponseListener listener, AnnounceRequestMessage.RequestEvent event) throws UnknownServiceException, UnknownHostException {
-    URI trackerUrl = URI.create(torrent.getAnnounce());
-    TrackerClient client = this.clients.get(trackerUrl.toString());
-    try {
-      if (client == null) {
-        client = myTrackerClientFactory.createTrackerClient(myPeers, trackerUrl);
-        client.register(listener);
-        this.clients.put(trackerUrl.toString(), client);
+  public void forceAnnounce(LoadedTorrent torrent, AnnounceResponseListener listener, AnnounceRequestMessage.RequestEvent event) throws UnknownServiceException, UnknownHostException {
+    AnnounceableInformation announceableInformation=torrent.createAnnounceableInformation();
+    if (announceableInformation.getAnnounce()!=null) {
+      URI trackerUrl = URI.create(announceableInformation.getAnnounce());
+      TrackerClient client = this.clients.get(trackerUrl.toString());
+      try {
+        if (client == null) {
+          client = myTrackerClientFactory.createTrackerClient(myPeers, trackerUrl);
+          client.register(listener);
+          this.clients.put(trackerUrl.toString(), client);
+        }
+        client.announceAllInterfaces(event, false, announceableInformation);
+      } catch (AnnounceException e) {
+
+        logger.info(String.format("Unable to force announce torrent %s on tracker %s.", announceableInformation.getHexInfoHash(), String.valueOf(trackerUrl)));
+        logger.debug(String.format("Unable to force announce torrent %s on tracker %s.", announceableInformation.getHexInfoHash(), String.valueOf(trackerUrl)), e);
       }
-      client.announceAllInterfaces(event, false, torrent);
-    } catch (AnnounceException e) {
-      logger.info(String.format("Unable to force announce torrent %s on tracker %s.", torrent.getHexInfoHash(), String.valueOf(trackerUrl)));
-      logger.debug(String.format("Unable to force announce torrent %s on tracker %s.", torrent.getHexInfoHash(), String.valueOf(trackerUrl)), e);
+    }
+    if (extAnnounceURLs!=null){
+      for (String url:extAnnounceURLs){
+        addTrackerURL(url,listener,torrent);
+      }
     }
   }
+  private Set<String> extAnnounceURLs=null;
 
+  public void addTrackerURL(String url, AnnounceResponseListener listener, LoadedTorrent torrent) throws UnknownServiceException, UnknownHostException {
+    if (extAnnounceURLs==null){
+       extAnnounceURLs=new HashSet<>();
+    }
+    if (extAnnounceURLs.contains(url))return;
+    extAnnounceURLs.add(url);
+    TrackerClient client = myTrackerClientFactory.createTrackerClient(myPeers, URI.create(url));
+    client.register(listener);
+    this.clients.put(url, client);
+    torrent.setAnnounce(null);
+    List<List<String>> lst=new LinkedList<>();
+    lst.add(Arrays.asList(extAnnounceURLs.toArray(new String[0])));
+    torrent.setAnnounceUrls(lst);
+    AnnounceableInformation announceableInformation=torrent.createAnnounceableInformation();
+    try {
+      client.announceAllInterfaces(AnnounceRequestMessage.RequestEvent.STARTED, false, announceableInformation);
+    } catch (AnnounceException e) {
+      logger.info(String.format("Unable to force announce torrent %s on tracker %s.", announceableInformation.getHexInfoHash(), String.valueOf(url)));
+      logger.debug(String.format("Unable to force announce torrent %s on tracker %s.", announceableInformation.getHexInfoHash(), String.valueOf(url)), e);
+    }
+  }
   /**
    * Start the announce request thread.
    */
-  public void start(final URI defaultTrackerURI, final AnnounceResponseListener listener, final Peer[] peers, final int announceInterval) {
+  public void start(final URI defaultTrackerURI, final AnnounceResponseListener listener, final Peer[] peers, final int announceInterval,Set<String>...extAnnounceURLs) {
     myAnnounceInterval = announceInterval;
     myPeers.addAll(Arrays.asList(peers));
     if (defaultTrackerURI != null) {
@@ -114,10 +147,20 @@ public class Announce implements Runnable {
         myDefaultTracker = myTrackerClientFactory.createTrackerClient(myPeers, defaultTrackerURI);
         myDefaultTracker.register(listener);
         this.clients.put(defaultTrackerURI.toString(), myDefaultTracker);
+        if (extAnnounceURLs.length>0&&extAnnounceURLs[0]!=null){
+          for (String url:extAnnounceURLs[0]){
+            TrackerClient client = myTrackerClientFactory.createTrackerClient(myPeers, URI.create(url));
+            client.register(listener);
+            this.clients.put(url, client);
+          }
+        }
       } catch (Exception e) {
       }
     } else {
       myDefaultTracker = null;
+    }
+    if (extAnnounceURLs.length>0){
+      this.extAnnounceURLs=extAnnounceURLs[0];
     }
 
     this.stop = false;

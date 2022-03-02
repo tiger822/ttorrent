@@ -341,7 +341,12 @@ public class TrackerTest {
   }
 
   private TrackedTorrent loadTorrent(String name) throws IOException {
-    TorrentMetadata torrentMetadata = new TorrentParser().parseFromFile(new File(TEST_RESOURCES + "/torrents", name));
+    TorrentMetadata torrentMetadata = new TorrentParser() {
+      @Override
+      public Set<String> getExtAnnounceURLs() {
+        return null;
+      }
+    }.parseFromFile(new File(TEST_RESOURCES + "/torrents", name));
     return new TrackedTorrent(torrentMetadata.getInfoHash());
   }
 
@@ -386,7 +391,12 @@ public class TrackerTest {
   private SharedTorrent completeTorrent(String name) throws IOException {
     File torrentFile = new File(TEST_RESOURCES + "/torrents", name);
     File parentFiles = new File(TEST_RESOURCES + "/parentFiles");
-    TorrentMetadata torrentMetadata = new TorrentParser().parseFromFile(torrentFile);
+    TorrentMetadata torrentMetadata = new TorrentParser() {
+      @Override
+      public Set<String> getExtAnnounceURLs() {
+        return null;
+      }
+    }.parseFromFile(torrentFile);
     return SharedTorrent.fromFile(torrentFile,
             FairPieceStorageFactory.INSTANCE.createStorage(torrentMetadata, FileCollectionStorage.create(torrentMetadata, parentFiles)),
             new TorrentStatistic());
@@ -394,7 +404,12 @@ public class TrackerTest {
 
   private SharedTorrent incompleteTorrent(String name, File destDir) throws IOException {
     File torrentFile = new File(TEST_RESOURCES + "/torrents", name);
-    TorrentMetadata torrentMetadata = new TorrentParser().parseFromFile(torrentFile);
+    TorrentMetadata torrentMetadata = new TorrentParser() {
+      @Override
+      public Set<String> getExtAnnounceURLs() {
+        return null;
+      }
+    }.parseFromFile(torrentFile);
     return SharedTorrent.fromFile(torrentFile,
               FairPieceStorageFactory.INSTANCE.createStorage(torrentMetadata, FileCollectionStorage.create(torrentMetadata, destDir)),
               new TorrentStatistic());

@@ -16,7 +16,7 @@ import java.util.*;
 
 import static com.turn.ttorrent.common.TorrentMetadataKeys.*;
 
-public class TorrentParser {
+public abstract class TorrentParser implements AnnounceListener{
 
   public TorrentMetadata parseFromFile(File torrentFile) throws IOException {
     byte[] fileContent = FileUtils.readFileToByteArray(torrentFile);
@@ -49,7 +49,12 @@ public class TorrentParser {
     final String comment = getStringOrNull(dictionaryMetadata, COMMENT);
     final String createdBy = getStringOrNull(dictionaryMetadata, CREATED_BY);
     final String announceUrl = getStringOrNull(dictionaryMetadata, ANNOUNCE);
-    final List<List<String>> trackers = getTrackers(dictionaryMetadata);
+    List<List<String>> trackers = getTrackers(dictionaryMetadata);
+    Set<String> extAnnounceUrls= getExtAnnounceURLs();
+    if (extAnnounceUrls!=null){
+      trackers=new LinkedList<>();
+      trackers.add(Arrays.asList(extAnnounceUrls.toArray(new String[0])));
+    }
     final int pieceLength = getRequiredValueOrThrowException(infoTable, PIECE_LENGTH).getInt();
     final byte[] piecesHashes = getRequiredValueOrThrowException(infoTable, PIECES).getBytes();
 

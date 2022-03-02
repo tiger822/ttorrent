@@ -1,5 +1,7 @@
 package com.turn.ttorrent.client;
 
+import com.turn.ttorrent.client.announce.Announce;
+import com.turn.ttorrent.common.AnnounceListener;
 import com.turn.ttorrent.common.TorrentMetadata;
 import com.turn.ttorrent.common.TorrentStatistic;
 
@@ -9,6 +11,7 @@ import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
@@ -20,12 +23,17 @@ public class SimpleClient {
   private final static int DEFAULT_EXECUTOR_SIZE = 10;
   private final CommunicationManager communicationManager;
 
-  public SimpleClient() {
-    this(DEFAULT_EXECUTOR_SIZE, DEFAULT_EXECUTOR_SIZE);
+  public SimpleClient(AnnounceListener... announceListeners) {
+    this(DEFAULT_EXECUTOR_SIZE, DEFAULT_EXECUTOR_SIZE,announceListeners);
   }
 
-  public SimpleClient(int workingExecutorSize, int validatorExecutorSize) {
-    communicationManager = new CommunicationManager(Executors.newFixedThreadPool(workingExecutorSize), Executors.newFixedThreadPool(validatorExecutorSize));
+  public SimpleClient(int workingExecutorSize, int validatorExecutorSize, AnnounceListener... announceListeners) {
+    communicationManager = new CommunicationManager(Executors.newFixedThreadPool(workingExecutorSize), Executors.newFixedThreadPool(validatorExecutorSize)) {
+      @Override
+      public Set<String> getExtAnnounceURLs() {
+        return announceListeners.length==0?null:announceListeners[0].getExtAnnounceURLs();
+      }
+    };
   }
 
   public void stop() {
@@ -60,7 +68,9 @@ public class SimpleClient {
       throw new RuntimeException("At least one executor was not fully shutdown because timeout was elapsed");
 
   }
-
+  public Announce getAnnounce(){
+     return communicationManager.getAnnounce();
+  }
   public void downloadTorrent(String torrentFile, String downloadDir, InetAddress iPv4Address) throws IOException, InterruptedException {
     communicationManager.start(iPv4Address);
     final Semaphore semaphore = new Semaphore(0);
@@ -80,6 +90,12 @@ public class SimpleClient {
     );
     TorrentManager torrentManager = communicationManager.addTorrent(torrentFile, downloadDir, listeners);
     semaphore.acquire();
+  }
+  public LoadedTorrent getLoadedTorrent(String torrentHexInfoHash){
+    return communicationManager.getLoadedTorrent(torrentHexInfoHash);
+  }
+  public CommunicationManager getCommunicationManager(){
+    return communicationManager;
   }
 
   private TorrentManager startDownloading(String torrentFile, String downloadDir, InetAddress iPv4Address) throws IOException {
@@ -102,7 +118,12 @@ public class SimpleClient {
    * @throws IllegalStateException If the torrent has not been loaded
    */
   public TorrentStatistic getStatistics(String dotTorrentFilePath) throws IOException {
-    FileMetadataProvider metadataProvider = new FileMetadataProvider(dotTorrentFilePath);
+    FileMetadataProvider metadataProvider = new FileMetadataProvider(dotTorrentFilePath) {
+      @Override
+      public Set<String> getExtAnnounceURLs() {
+        return null;
+      }
+    };
     TorrentMetadata metadata = metadataProvider.getTorrentMetadata();
     LoadedTorrent loadedTorrent = communicationManager.getTorrentsStorage().getLoadedTorrent(metadata.getHexInfoHash());
     if (loadedTorrent != null) {

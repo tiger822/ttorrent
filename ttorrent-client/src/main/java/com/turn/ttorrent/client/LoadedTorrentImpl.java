@@ -12,11 +12,18 @@ public class LoadedTorrentImpl implements LoadedTorrent {
 
   private final TorrentStatistic torrentStatistic;
   private final TorrentHash torrentHash;
-  private final List<List<String>> announceUrls;
-  private final String announce;
+  private List<List<String>> announceUrls;
+  private String announce;
   private final PieceStorage pieceStorage;
   private final TorrentMetadataProvider metadataProvider;
   private final EventDispatcher eventDispatcher;
+
+  public void setAnnounceUrls(List<List<String>> announceUrls) {
+    this.announceUrls=announceUrls;
+  }
+  public void setAnnounce(String announce) {
+    this.announce=announce;
+  }
 
   LoadedTorrentImpl(TorrentStatistic torrentStatistic,
                     TorrentMetadataProvider metadataProvider,
@@ -35,6 +42,7 @@ public class LoadedTorrentImpl implements LoadedTorrent {
     this.announce = torrentMetadata.getAnnounce();
     this.pieceStorage = pieceStorage;
   }
+
 
   @Override
   public PieceStorage getPieceStorage() {

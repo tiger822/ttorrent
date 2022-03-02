@@ -7,6 +7,8 @@ import com.turn.ttorrent.common.TorrentMetadata;
 import com.turn.ttorrent.common.TorrentStatistic;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
+
 public interface LoadedTorrent {
 
   /**
@@ -41,5 +43,6 @@ public interface LoadedTorrent {
    * @return related {@link EventDispatcher}
    */
   EventDispatcher getEventDispatcher();
-
+  void setAnnounceUrls(List<List<String>> announceUrls);
+  void setAnnounce(String announce);
 }
